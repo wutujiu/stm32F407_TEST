@@ -1,0 +1,29 @@
+# 默认：自动检测文本文件，仓库内存 LF
+* text=auto
+
+# STM32CubeMX 工程文件必须保持 LF，否则重新生成代码时会产生整文件 diff
+*.ioc text eol=lf
+
+# 源码统一 LF
+*.c    text eol=lf
+*.h    text eol=lf
+*.s    text eol=lf
+*.ld   text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+
+# Windows 批处理 / 脚本保持 CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# 二进制文件不参与换行转换和 diff
+*.bin  binary
+*.hex  binary
+*.elf  binary
+*.o    binary
+*.a    binary
+*.png  binary
+*.jpg  binary
+*.pdf  binary

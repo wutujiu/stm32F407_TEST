@@ -1,0 +1,43 @@
+# ---- 构建产物 ----
+build/
+cmake-build-*/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.su
+compile_commands.json
+
+# ---- CMake / Ninja ----
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+cmake_install.cmake
+build.ninja
+.ninja_deps
+.ninja_log
+Makefile
+rules.ninja
+
+# ---- STM32CubeMX ----
+# .mxproject 是 CubeMX 的本地缓存，重新打开 .ioc 会自动重建
+.mxproject
+*.bak
+
+# ---- 编辑器 / IDE ----
+.vscode/*.log
+.vscode/ipch/
+*.code-workspace
+.idea/
+*.swp
+*~
+
+# ---- 本地工具配置（含机器相关路径，不入库） ----
+.claude/settings.local.json
+
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db
+desktop.ini

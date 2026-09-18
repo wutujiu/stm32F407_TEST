@@ -1,0 +1,5 @@
+# clangd 项目配置
+# 路径相对于本文件所在目录。
+# 指向 CMake 生成的编译数据库，clangd 据此获得全部 -I / -D / 目标架构参数。
+CompileFlags:
+  CompilationDatabase: build/Debug

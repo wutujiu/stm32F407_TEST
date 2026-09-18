@@ -1,0 +1,16 @@
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": true,
+
+  "clangd.arguments": [
+    "--query-driver=C:/Program Files/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin/arm-none-eabi-*"
+  ],
+
+  "cortex-debug.armToolchainPath": "C:/Program Files/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin",
+  "cortex-debug.openocdPath": "C:/Program Files/OpenOCD/bin/openocd.exe",
+
+  "files.associations": {
+    "*.ld": "linkerscript",
+    "*.s": "arm"
+  }
+}

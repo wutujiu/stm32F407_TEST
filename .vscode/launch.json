@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug (DAPLink)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/Debug/STM32F407_TEST.elf",
+      "serverpath": "C:/Program Files/OpenOCD/bin/openocd.exe",
+      "searchDir": [
+        "C:/Program Files/OpenOCD/openocd/scripts"
+      ],
+      "configFiles": [
+        "interface/cmsis-dap.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "armToolchainPath": "C:/Program Files/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin",
+      "device": "STM32F407ZG",
+      "interface": "swd",
+      "rtos": "FreeRTOS",
+      "runToEntryPoint": "main",
+      "preLaunchTask": "Build Debug"
+    },
+    {
+      "name": "Attach (DAPLink)",
+      "type": "cortex-debug",
+      "request": "attach",
+      "servertype": "openocd",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/Debug/STM32F407_TEST.elf",
+      "serverpath": "C:/Program Files/OpenOCD/bin/openocd.exe",
+      "searchDir": [
+        "C:/Program Files/OpenOCD/openocd/scripts"
+      ],
+      "configFiles": [
+        "interface/cmsis-dap.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "armToolchainPath": "C:/Program Files/Arm GNU Toolchain arm-none-eabi/14.3 rel1/bin",
+      "device": "STM32F407ZG",
+      "interface": "swd",
+      "rtos": "FreeRTOS"
+    }
+  ]
+}
