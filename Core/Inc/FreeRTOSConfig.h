@@ -134,6 +134,8 @@ standard names. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+/* 开启任务栈余量查询（uxTaskGetStackHighWaterMark），用于验证 ledTask 加大后的栈深度 */
+#define INCLUDE_uxTaskGetStackHighWaterMark   1
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */

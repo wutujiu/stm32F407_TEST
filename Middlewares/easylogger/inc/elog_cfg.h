@@ -29,6 +29,12 @@
 #ifndef _ELOG_CFG_H_
 #define _ELOG_CFG_H_
 /*---------------------------------------------------------------------------*/
+/*
+ * 本文件已针对 STM32F407_TEST 工程（STM32F407ZGT6 + FreeRTOS + USART1）裁剪，
+ * 与上游默认值的差异见各条目后的「本项目」注释。
+ * 升级 EasyLogger 上游版本时，本文件与 port/elog_port.c 需要重新适配。
+ */
+/*---------------------------------------------------------------------------*/
 /* enable log output. */
 #define ELOG_OUTPUT_ENABLE
 /* setting static output log level. range: from ELOG_LVL_ASSERT to ELOG_LVL_VERBOSE */
@@ -36,7 +42,8 @@
 /* enable assert check */
 #define ELOG_ASSERT_ENABLE
 /* buffer size for every line's log */
-#define ELOG_LINE_BUF_SIZE                       1024
+/* 本项目：上游默认 1024，单行日志实测约 80 字节，降到 256 省 768 B .bss */
+#define ELOG_LINE_BUF_SIZE                       256
 /* output line number max length */
 #define ELOG_LINE_NUM_MAX_LEN                    5
 /* output filter's tag max length */
@@ -46,7 +53,8 @@
 /* output filter's tag level max num */
 #define ELOG_FILTER_TAG_LVL_MAX_NUM              5
 /* output newline sign */
-#define ELOG_NEWLINE_SIGN                        "\n"
+/* 本项目：上游默认 "\n"，串口终端需要 CRLF 换行 */
+#define ELOG_NEWLINE_SIGN                        "\r\n"
 /*---------------------------------------------------------------------------*/
 /* enable log color */
 #define ELOG_COLOR_ENABLE
@@ -61,9 +69,20 @@
 /* enable log fmt */
 /* comment it if you don't want to output them at all */
 #define ELOG_FMT_USING_FUNC
-#define ELOG_FMT_USING_DIR
+/* 本项目：注释掉 DIR，__FILE__ 是编译时的绝对路径（约 45 字符/行），徒增日志长度与 Flash */
+/* #define ELOG_FMT_USING_DIR */
 #define ELOG_FMT_USING_LINE
 /*---------------------------------------------------------------------------*/
+/* 本项目：采用同步阻塞输出，异步模式与缓冲模式均关闭。
+ * 关闭后 elog_output() 直接调用 elog_port_output()（见 elog.c 末尾的 #if 分支链）。
+ *
+ * 若要改回异步模式（日志调用不阻塞，由独立任务发送），需：
+ *   1. 放开下面的 ELOG_ASYNC_OUTPUT_ENABLE；
+ *   2. 不要放开 ELOG_ASYNC_OUTPUT_USING_PTHREAD（裸机无 pthread，放开会链接失败）；
+ *   3. 在移植层实现 elog_async_output_notice()（用 xTaskNotifyGive 唤醒日志任务）；
+ *   4. 新建一个日志任务，循环调用 elog_async_get_line_log() 取日志并输出。
+ */
+#if 0
 /* enable asynchronous output mode */
 #define ELOG_ASYNC_OUTPUT_ENABLE
 /* the highest output level for async mode, other level will sync output */
@@ -79,5 +98,6 @@
 #define ELOG_BUF_OUTPUT_ENABLE
 /* buffer size for buffered output mode */
 #define ELOG_BUF_OUTPUT_BUF_SIZE                 (ELOG_LINE_BUF_SIZE * 10)
+#endif /* 本项目：同步输出，异步/缓冲模式关闭 */
 
 #endif /* _ELOG_CFG_H_ */

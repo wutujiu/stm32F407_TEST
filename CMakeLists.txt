@@ -60,9 +60,32 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
+# ---------------------------------------------------------------------------
+# EasyLogger 日志组件（第三方，源码位于 Middlewares/easylogger）
+#
+# 注意：必须写在本文件（CubeMX 只生成一次、后续重新生成代码不会覆盖），
+#      不能写进 cmake/stm32cubemx/CMakeLists.txt（该文件每次都会被重新生成）。
+#
+# plugins/file 与 plugins/flash 依赖文件系统 / Flash 驱动，本项目不使用，故不编译。
+# elog_async.c / elog_buf.c 在对应模式关闭时编译为空文件，保留以便后续切换模式。
+# ---------------------------------------------------------------------------
+set(EASYLOGGER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/easylogger)
+
+add_library(EasyLogger STATIC
+    ${EASYLOGGER_DIR}/src/elog.c
+    ${EASYLOGGER_DIR}/src/elog_utils.c
+    ${EASYLOGGER_DIR}/src/elog_async.c
+    ${EASYLOGGER_DIR}/src/elog_buf.c
+    ${EASYLOGGER_DIR}/port/elog_port.c
+)
+# PUBLIC：inc 目录自动传递给依赖它的目标（Core/Src/*.c 可直接 #include <elog.h>）
+target_include_directories(EasyLogger PUBLIC ${EASYLOGGER_DIR}/inc)
+target_link_libraries(EasyLogger PUBLIC stm32cubemx)
+
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+    EasyLogger
 )

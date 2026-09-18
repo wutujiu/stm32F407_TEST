@@ -25,7 +25,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+/* LOG_TAG / LOG_LVL 必须在包含 <elog.h> 之前定义，之后即可使用 log_x() 简写接口。
+ * LOG_LVL 是"编译期"过滤级别：低于该级别的 log_x() 会被编译为空语句，不占 Flash。 */
+#define LOG_TAG    "led"
+#define LOG_LVL    ELOG_LVL_DEBUG
+#include <elog.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -108,7 +112,10 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of ledTask */
-  osThreadDef(ledTask, LedTask, osPriorityIdle, 0, 128);
+  /* 栈由 128 字放大到 256 字：任务内调用日志接口会引入
+   * elog_output() → vsnprintf() → HAL_UART_Transmit() 的调用链。
+   * 同步修改了 STM32F407_TEST.ioc 中的同名参数，重新生成代码不会回退。 */
+  osThreadDef(ledTask, LedTask, osPriorityIdle, 0, 256);
   ledTaskHandle = osThreadCreate(osThread(ledTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -145,10 +152,34 @@ void StartDefaultTask(void const * argument)
 void LedTask(void const * argument)
 {
   /* USER CODE BEGIN LedTask */
+  static uint32_t toggle_cnt = 0U;
+  GPIO_PinState   level;
+
+  log_i("ledTask start: PC13 toggle every 500 ms");
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    /* PC13 翻转（板载 LED，低电平点亮） */
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    toggle_cnt++;
+    /* 回读实际电平，保证日志反映的是引脚真实状态 */
+    level = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+
+    log_i("PC13 -> %s, toggle count = %lu",
+          (level == GPIO_PIN_SET) ? "HIGH" : "LOW", (unsigned long)toggle_cnt);
+
+    /* 每 20 次翻转（约 10 s）报一次任务栈余量，用于验证栈深度是否足够。
+     * 需要 INCLUDE_uxTaskGetStackHighWaterMark = 1（见 FreeRTOSConfig.h）。
+     * 余量稳定后本段可直接删除。 */
+    if ((toggle_cnt % 20U) == 0U)
+    {
+      log_d("ledTask stack high water mark = %lu words",
+            (unsigned long)uxTaskGetStackHighWaterMark(NULL));
+    }
+
+    /* 实际周期 = 500 ms + 日志串口发送耗时（约 5 ms @115200） */
+    osDelay(500);
   }
   /* USER CODE END LedTask */
 }

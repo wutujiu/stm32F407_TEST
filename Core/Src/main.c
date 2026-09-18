@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <elog.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,7 +91,19 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  /* EasyLogger 初始化：必须放在 MX_USART1_UART_Init() 之后、任务开始打印日志之前。
+   * elog_init() 会创建输出锁（FreeRTOS 互斥量，调度器启动前创建是允许的）；
+   * elog_start() 打印启动横幅，此时调度器未启动，走阻塞发送分支正常出字。 */
+  elog_init();
+  /* 逐级设置日志格式。注意：elog.c 中 elog 对象是零初始化的，不调用本接口则
+   * 所有格式项均为关闭状态，日志只剩裸消息（无等级/tag/时间）。
+   * 这里开启：等级 + tag + 时间 + 任务名 + 函数名 + 行号（不含进程信息、不含文件路径）。 */
+  for (uint8_t lvl = ELOG_LVL_ASSERT; lvl <= ELOG_LVL_VERBOSE; lvl++)
+  {
+    elog_set_fmt(lvl, ELOG_FMT_LVL | ELOG_FMT_TAG | ELOG_FMT_TIME |
+                      ELOG_FMT_T_INFO | ELOG_FMT_FUNC | ELOG_FMT_LINE);
+  }
+  elog_start();
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
