@@ -47,7 +47,12 @@
 /* output line number max length */
 #define ELOG_LINE_NUM_MAX_LEN                    5
 /* output filter's tag max length */
-#define ELOG_FILTER_TAG_MAX_LEN                  30
+/* 本项目：上游默认 30，改小到 8。该宏同时决定两件事：
+ *   1) 输出行里 tag 字段的对齐宽度 = ELOG_FILTER_TAG_MAX_LEN / 2 + 1 = 5 字符
+ *      （默认 30 时是 16 字符，短 tag 会补十几个空格，日志行被拉得很长）
+ *   2) 可参与 elog_set_filter_tag/tag_lvl 过滤的 tag 最大长度
+ * 注意：日志中实际输出的 tag 不受本宏限制，超长 tag 只是无法按 tag 过滤。 */
+#define ELOG_FILTER_TAG_MAX_LEN                  8
 /* output filter's keyword max length */
 #define ELOG_FILTER_KW_MAX_LEN                   16
 /* output filter's tag level max num */
@@ -57,7 +62,13 @@
 #define ELOG_NEWLINE_SIGN                        "\r\n"
 /*---------------------------------------------------------------------------*/
 /* enable log color */
-#define ELOG_COLOR_ENABLE
+/* 本项目：关闭彩色输出。开启后每条日志会插入 ANSI 转义序列
+ * （如 ESC[36;22m ... ESC[0m），不支持 ANSI 的串口助手会把 ESC 字节丢掉，
+ * 只显示出 "[36;22m" "[0m" 这类残留文本，看起来像乱码。
+ * 若使用支持 ANSI 的终端（MobaXterm / VS Code 串口监视器 / minicom 等），
+ * 放开本宏即可恢复彩色；注意放开本宏是唯一开关，仅调用
+ * elog_set_text_color_enabled(true) 在宏关闭时不产生任何颜色。 */
+/* #define ELOG_COLOR_ENABLE */
 /* change the some level logs to not default color if you want */
 #define ELOG_COLOR_ASSERT                        (F_MAGENTA B_NULL S_NORMAL)
 #define ELOG_COLOR_ERROR                         (F_RED B_NULL S_NORMAL)

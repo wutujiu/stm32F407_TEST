@@ -82,25 +82,26 @@ USART1（PA9/PA10，115200 8N1）上的日志由 [EasyLogger](https://github.com
 
 ### 输出效果
 
-以下为实机抓取的原始输出（已去掉 ANSI 颜色转义，实际每行末尾是 `\r\n`）：
+以下为实机抓取的原始输出（纯 ASCII，无转义序列，每行末尾是 `\r\n`）：
 
 ```
-I/elog            [000:00:00.000 main] (246 elog_start)EasyLogger V2.2.99 is initialize success.
-I/led             [000:00:00.001 ledTask] (158 LedTask)ledTask start: PC13 toggle every 500 ms
-I/led             [000:00:00.011 ledTask] (169 LedTask)PC13 -> HIGH, toggle count = 1
-I/led             [000:00:00.519 ledTask] (169 LedTask)PC13 -> LOW, toggle count = 2
-I/led             [000:00:01.027 ledTask] (169 LedTask)PC13 -> HIGH, toggle count = 3
-I/led             [000:00:01.535 ledTask] (169 LedTask)PC13 -> LOW, toggle count = 4
+I/elog [000:00:00.000 main] (246 elog_start)EasyLogger V2.2.99 is initialize success.
+I/led  [000:00:00.001 ledTask] (158 LedTask)ledTask start: PC13 toggle every 500 ms
+I/led  [000:00:00.009 ledTask] (169 LedTask)PC13 -> HIGH, toggle count = 1
+I/led  [000:00:00.515 ledTask] (169 LedTask)PC13 -> LOW, toggle count = 2
+I/led  [000:00:01.021 ledTask] (169 LedTask)PC13 -> HIGH, toggle count = 3
+I/led  [000:00:01.527 ledTask] (169 LedTask)PC13 -> LOW, toggle count = 4
 ...
-D/led             [000:00:30.012 ledTask] (177 LedTask)ledTask stack high water mark = 108 words
+D/led  [000:02:01.038 ledTask] (177 LedTask)ledTask stack high water mark = 110 words
 ```
 
 字段依次为：`等级 / tag / [时间 任务名] (行号 函数名)消息`。
 等级：`A` 断言、`E` 错误、`W` 警告、`I` 信息、`D` 调试、`V` 详细。
-带 ANSI 颜色（终端不支持时见下方"关闭颜色"）。
 
-> 注意 `(行号 函数名)` 与消息之间**没有空格**，这是组件 `elog_output()` 的固定拼接方式（消息格式串前如需分隔请自行加空格）。
-> tag 字段按 `ELOG_FILTER_TAG_MAX_LEN/2 = 15` 字符对齐补空格；`main` 表示调度器尚未启动（`elog_start()` 的启动横幅）。
+> 两个容易踩的显示细节（本工程已处理）：
+> - `(行号 函数名)` 与消息之间**没有空格**，这是组件 `elog_output()` 的固定拼接方式（需要在消息前加分隔请自行在格式串里加空格）。
+> - tag 字段按 `ELOG_FILTER_TAG_MAX_LEN/2 + 1` 对齐补空格。上游默认 `ELOG_FILTER_TAG_MAX_LEN = 30` 会补出 16 字符宽的字段（短 tag 后面十几个空格），本工程已改为 8，字段宽度 5 字符。
+> - `main` 表示调度器尚未启动（`elog_start()` 的启动横幅），任务内日志显示 FreeRTOS 任务名。
 
 ### 使用方法
 
@@ -122,7 +123,7 @@ log_e("init failed, err = %d", err);
 
 | 位置 | 内容 |
 | --- | --- |
-| `Middlewares/easylogger/inc/elog_cfg.h` | 组件配置：输出级别、行缓冲 256 B、`\r\n` 换行、彩色输出、格式项（已关 `ELOG_FMT_USING_DIR`）；**异步/缓冲模式均关闭** |
+| `Middlewares/easylogger/inc/elog_cfg.h` | 组件配置：输出级别、行缓冲 256 B、`\r\n` 换行、tag 字段宽 5 字符（`ELOG_FILTER_TAG_MAX_LEN = 8`）、格式项（已关 `ELOG_FMT_USING_DIR`）；**彩色输出关闭、异步/缓冲模式均关闭** |
 | `Middlewares/easylogger/port/elog_port.c` | 移植层：`HAL_UART_Transmit()` 输出、FreeRTOS 互斥量做输出锁、`HAL_GetTick()` 时间戳、FreeRTOS 任务名 |
 | `Core/Src/main.c` | `elog_init()` → `elog_set_fmt()` → `elog_start()`（在 `MX_USART1_UART_Init()` 之后） |
 | `CMakeLists.txt` | `EasyLogger` 静态库的接入（写在顶层，CubeMX 重新生成不会覆盖） |
@@ -133,8 +134,8 @@ log_e("init failed, err = %d", err);
 
 - **只能在任务上下文调用日志接口**。在中断里调用会触发 FreeRTOS `configASSERT`（关中断死循环）。若需要中断中打日志，请改用异步模式（步骤见 `elog_cfg.h` 中的注释）。
 - **USART1 由日志系统独占**。其它代码若要直接操作 `huart1`，需复用移植层里的同一把互斥量，否则输出会交错。
-- 单条日志约 95 字节（含 ANSI 颜色），@115200 实测耗时约 8 ms，因此 `ledTask` 的实际周期是 **508 ms**（500 + 8）而不是严格 500 ms。
-- 关闭颜色：`elog_set_text_color_enabled(false)`，或注释掉 `elog_cfg.h` 里的 `ELOG_COLOR_ENABLE`。
+- 单条日志约 85 字节，@115200 实测耗时约 7 ms，因此 `ledTask` 的实际周期是 **506 ms**（500 + 7）而不是严格 500 ms。
+- **彩色输出默认关闭**。开启后每条日志会插入 ANSI 转义序列（`ESC[36;22m ... ESC[0m`），不支持 ANSI 的串口助手会丢掉 ESC 字节、只显示 `[36;22m` `[0m` 之类的残留文本，看着像乱码。要恢复彩色需**放开 `elog_cfg.h` 里的 `ELOG_COLOR_ENABLE` 宏**（该宏是唯一开关，仅调用 `elog_set_text_color_enabled(true)` 在宏关闭时无效），适用于 MobaXterm / VS Code 串口监视器 / minicom 等支持 ANSI 的终端。
 - newlib-nano 的 `printf` 在 `%s` 参数超过 64 字节时会调用 newlib 自己的 `malloc`（堆区在 `.bss` 之上，与 FreeRTOS `heap_4` 不重叠）。本工程日志均为短格式，不会触发。
 - 升级 EasyLogger 上游版本时，`elog_cfg.h` 与 `port/elog_port.c` 需要重新适配。
 
@@ -142,12 +143,13 @@ log_e("init failed, err = %d", err);
 
 | 项 | 增量 | 主要构成 |
 | --- | --- | --- |
-| Flash | **+12.4 KB** | EasyLogger 自身 3.2 KB、newlib-nano printf 族 2.4 KB、FreeRTOS 队列/互斥量机制 3.2 KB、HAL UART 发送链路 2.0 KB、newlib malloc 0.4 KB |
-| RAM | **+1.0 KB** | `.bss` +864 B（行缓冲 256 B、elog 对象 248 B、newlib stdio/reent 约 336 B）、`.data` +128 B |
+| Flash | **+12.0 KB** | EasyLogger 自身约 2.9 KB、newlib-nano printf 族 2.4 KB、FreeRTOS 队列/互斥量机制 3.2 KB、HAL UART 发送链路 2.0 KB、newlib malloc 0.4 KB，其余为日志格式串等 `.rodata` |
+| RAM | **+0.8 KB** | `.bss` +736 B（行缓冲 256 B、elog 对象与 tag 过滤表约 140 B、newlib stdio/reent 约 336 B）、`.data` +104 B |
 | FreeRTOS 堆 | +约 1.7 KB | 输出互斥量约 80 B + `ledTask` 栈增量 512 B（`heap_4` 共 15360 B） |
 
 > Flash 增量主要不是日志组件本身，而是"首次使用 printf 与互斥量"带来的运行时机制（此前被 `--gc-sections` 回收）。
-> 若需进一步压缩：把 `ELOG_OUTPUT_LVL` 降到 `ELOG_LVL_INFO`（`log_d`/`log_v` 不再生成代码），或按下方说明改为无锁输出。
+> 若需进一步压缩 Flash：把 `ELOG_OUTPUT_LVL` 降到 `ELOG_LVL_INFO`，`log_d`/`log_v` 便不再生成代码。
+> 另外约 3.2 KB 是 FreeRTOS 互斥量带来的队列机制；只有在确认日志仅由单任务调用时，才可以把移植层的锁改成空实现来省掉它（多任务下会失去串口输出的串行化保证，不建议）。
 
 ### 实测验证记录
 
@@ -155,12 +157,13 @@ log_e("init failed, err = %d", err);
 
 | 项 | 实测值 | 说明 |
 | --- | --- | --- |
-| 日志周期 | **508 ms**（21/22 次为 508，1 次 509） | 500 ms 延时 + 约 8 ms 串口发送 |
-| 电平交替 | 严格 HIGH/LOW 交替，计数 1→N 连续无丢行 | — |
-| 启动时序 | 横幅 `000:00:00.000` → 任务启动 `000:00:00.001` → 首次翻转 `000:00:00.011` | 调度器启动后约 10 ms 首次运行 |
-| `ledTask` 栈峰值 | **148 字 / 256 字**（`high water mark = 108 words`，即剩余 108 字≈432 B） | 见下方说明 |
+| 日志周期 | **506 ms** | 500 ms 延时 + 约 7 ms 串口发送（85 字节/行 @115200） |
+| 输出内容 | 纯 ASCII、无 ESC 字节、每行以 `\r\n` 结束（`od` 逐字节核对） | 彩色关闭后不再有转义序列残留 |
+| 电平交替 | 严格 HIGH/LOW 交替，计数连续无丢行 | — |
+| 启动时序 | 横幅 `000:00:00.000` → 任务启动 `000:00:00.001` → 首次翻转 `000:00:00.009` | 调度器启动后约 9 ms 首次运行 |
+| `ledTask` 栈峰值 | **146 字 / 256 字**（`high water mark = 110 words`，即剩余 110 字≈440 B） | 见下方说明 |
 
-> **栈深度是本次集成最容易踩的坑**：实测峰值 148 字，而 `ledTask` 原栈只有 128 字 ——
+> **栈深度是本次集成最容易踩的坑**：实测峰值 146 字，而 `ledTask` 原栈只有 128 字 ——
 > 若沿用默认栈，调用日志接口会直接栈溢出（越过栈底写坏相邻的 `heap_4` 数据）。
 > 放大到 256 字后仍有 42% 余量。峰值包含 FreeRTOS 保存的任务上下文，
 > 以及 newlib-nano `vsnprintf()` 内部 64 字节的临时缓冲。
