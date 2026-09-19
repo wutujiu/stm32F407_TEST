@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <elog.h>
+#include "led_ctrl.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,6 +92,9 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  /* PA15 按键引脚修正（补内部上拉），必须在 MX_GPIO_Init() 之后 */
+  GPIO_PA15_ButtonInit();
+
   /* EasyLogger 初始化：必须放在 MX_USART1_UART_Init() 之后、任务开始打印日志之前。
    * elog_init() 会创建输出锁（FreeRTOS 互斥量，调度器启动前创建是允许的）；
    * elog_start() 打印启动横幅，此时调度器未启动，走阻塞发送分支正常出字。 */
@@ -193,7 +197,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+  if (htim->Instance == TIM1)
+  {
+    /* LED 闪烁/呼吸灯的 1 ms 时基。放在 HAL 时基中断里而不是任务里，是因为
+     * 按键回调中的日志（串口阻塞约 7 ms）会打断任务里的 PWM 与闪烁时序。
+     * 注意：本回调运行在中断上下文，禁止调用任何日志接口。 */
+    led_ctrl_tick_1ms();
+  }
   /* USER CODE END Callback 1 */
 }
 

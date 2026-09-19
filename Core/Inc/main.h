@@ -53,13 +53,18 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+/* 用户补充的引脚初始化（见 gpio.c），在 MX_GPIO_Init() 之后调用 */
+void GPIO_PA15_ButtonInit(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-
+/* 板载 LED（PC13，低电平点亮）与用户按键（PA15） */
+#define LED_GPIO_Port      GPIOC
+#define LED_PIN            GPIO_PIN_13
+#define BTN_GPIO_Port      GPIOA
+#define BTN_PIN            GPIO_PIN_15
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -43,8 +43,14 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Add sources to executable
+# ---------------------------------------------------------------------------
+# 用户手写的应用源码。
+# 必须写在本文件（CubeMX 只生成一次、后续重新生成代码不会覆盖），
+# 不能写进 cmake/stm32cubemx/CMakeLists.txt（该文件每次都会被重新生成）。
+# ---------------------------------------------------------------------------
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
+    Core/Src/btn_app.c      # PA15 按键应用层（MultiButton 事件 → LED 模式）
+    Core/Src/led_ctrl.c     # PC13 LED 多模式闪烁引擎（1 ms 中断上下文）
 )
 
 # Add include paths
@@ -82,10 +88,17 @@ add_library(EasyLogger STATIC
 target_include_directories(EasyLogger PUBLIC ${EASYLOGGER_DIR}/inc)
 target_link_libraries(EasyLogger PUBLIC stm32cubemx)
 
+# ---------------------------------------------------------------------------
+# MultiButton 按键驱动（第三方，源码位于 Middlewares/MultiButton）
+# 组件自带 CMakeLists.txt，顶层只负责加入构建树，细节留在组件目录里。
+# ---------------------------------------------------------------------------
+add_subdirectory(Middlewares/MultiButton)
+
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
     EasyLogger
+    MultiButton
 )
